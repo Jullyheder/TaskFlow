@@ -21,5 +21,7 @@ import { User, UserSchema } from './schemas/user.schema';
     UsersService,
     UsersDao,
   ],
+  
+  exports:[UsersService],
 })
 export class UsersModule {}

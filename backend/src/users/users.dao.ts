@@ -16,15 +16,32 @@ export class UsersDao {
         return this.userModel.find().exec();
     }
 
-    async findByName(name: string) {
-        return this.userModel.findOne({ name }).exec();
+    async findById(id: string) {
+        return this.userModel.findOne({ _id: id }).exec();
     }
 
     async findByEmail(email: string) {
         return this.userModel.findOne({ email }).exec();
     }
 
+    async findByEmailWithPassword(email: string) {
+        return this.userModel
+        .findOne({ email })
+        .select('+password')
+        .exec();
+    }
+
     async create(data: CreateUserDto) {
         return this.userModel.create(data);
+    }
+
+    async update(id: string, data: Partial<CreateUserDto>) {
+        return this.userModel.findByIdAndUpdate(
+            id, data, { returnDocument: 'after' }
+        ).exec();
+    }
+
+    async delete(id: string) {
+        return this.userModel.findByIdAndDelete(id).exec();
     }
 }

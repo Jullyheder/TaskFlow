@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -15,7 +15,7 @@ export class UsersService {
     const userExists = await this.usersDao.findByEmail(createUserDto.email);
 
     if (userExists) {
-      throw new Error('User with this email already exists');
+      throw new ConflictException('User with this email already exists');
     }
 
     createUserDto.password = await bcrypt.hash(createUserDto.password, this.saltRounds);
@@ -27,15 +27,39 @@ export class UsersService {
     return this.usersDao.findAll();
   }
 
-  findOne(name: string) {
-    return this.usersDao.findByName(name.toString());
+  findOne(id: string) {
+    return this.usersDao.findById(id.toString());
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  findByEmail(email: string) {
+    return this.usersDao.findByEmail(email);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  findByEmailWithPassword(email: string) {
+    return this.usersDao.findByEmailWithPassword(email);
+  }
+
+  async update(id: string, updateUserDto: UpdateUserDto) {
+    const user = await this.usersDao.findById(id.toString());
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (updateUserDto.password) {
+      updateUserDto.password = await bcrypt.hash(updateUserDto.password, this.saltRounds);
+    }
+
+    return this.usersDao.update(id.toString(), updateUserDto);
+  }
+
+  async remove(id: string) {
+    const user = await this.usersDao.findById(id.toString());
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return this.usersDao.delete(id.toString());
   }
 }
