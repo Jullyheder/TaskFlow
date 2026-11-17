@@ -1,9 +1,13 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { UsersService } from './users.service';
+
 import { UsersController } from './users.controller';
+import { UsersService } from './users.service';
 import { UsersDao } from './users.dao';
+
 import { User, UserSchema } from './schemas/user.schema';
+
+import { AuthJwtModule } from '../auth/auth-jwt.module';
 
 @Module({
   imports: [
@@ -12,7 +16,9 @@ import { User, UserSchema } from './schemas/user.schema';
         name: User.name,
         schema: UserSchema,
       }
-    ])
+    ]),
+
+    AuthJwtModule,
   ],
 
   controllers: [UsersController],

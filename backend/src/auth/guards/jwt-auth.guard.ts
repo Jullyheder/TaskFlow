@@ -4,12 +4,16 @@ import {
     Injectable,
     UnauthorizedException,
 } from '@nestjs/common';
+
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 
-type AuthRequest = Request & {
-    user?: { sub: string }
-};
+import { JwtPayload } from '../interfaces/jwt-payload.interface';
+import { UserRole } from '../../users/enums/user-role.enum';
+
+interface AuthenticatedRequest extends Request {
+    user?: JwtPayload;
+}
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -20,7 +24,7 @@ export class JwtAuthGuard implements CanActivate {
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const request = context
         .switchToHttp()
-        .getRequest<AuthRequest>();
+        .getRequest<AuthenticatedRequest>();
 
         const [type, token] = request.headers.authorization?.split(' ') ?? [];
 
@@ -29,15 +33,16 @@ export class JwtAuthGuard implements CanActivate {
         }
 
         try {
-            const payload = await this.jwtService.verifyAsync<{ sub: string }>(
-                token,
-            );
+            const payload = await this.jwtService.verifyAsync<JwtPayload>(token);
 
-            if (typeof payload.sub !== 'string') {
-                throw new Error('Invalid token payload');
+            if (!payload.sub || !Object.values(UserRole).includes(payload.role)) {
+                throw new UnauthorizedException();
             }
 
-            request.user = { sub: payload.sub };
+            request.user = {
+                sub: payload.sub,
+                role: payload.role,
+            };
 
             return true;
         } catch {

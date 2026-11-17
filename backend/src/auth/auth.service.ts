@@ -9,8 +9,9 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 
 import { UsersService } from '../users/users.service';
-import { RegisterDto } from './dto/register.dto';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
 
 @Injectable()
 export class AuthService {
@@ -22,21 +23,9 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    const email = dto.email.toLowerCase();
+    dto.email = dto.email.toLowerCase();
 
-    const userExists = await this.usersService.findByEmail(email);
-
-    if (userExists) {
-      throw new ConflictException('User with this email already exists');
-    }
-
-    dto.password = await bcrypt.hash(dto.password, this.saltRounds);
-
-    const user = await this.usersService.create({
-      name: dto.name,
-      email,
-      password: dto.password,
-    });
+    const user = await this.usersService.create(dto);
 
     if (!user) {
       throw new BadRequestException('Failed to create user');
@@ -67,9 +56,12 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const accessToken = await this.jwtService.signAsync({
-      sub: user._id,
-    });
+    const payload: JwtPayload = {
+      sub: user._id.toString(),
+      role: user.role,
+    };
+
+    const accessToken = await this.jwtService.signAsync(payload);
 
     return {
       'access_token': accessToken,
